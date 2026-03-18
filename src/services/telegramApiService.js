@@ -1,6 +1,6 @@
-import { fetch } from 'undici';
+import { fetch } from "undici";
 
-const TG_API_BASE = 'https://api.telegram.org';
+const TG_API_BASE = "https://api.telegram.org";
 
 /**
  * 呼叫 Telegram Bot API
@@ -11,8 +11,8 @@ const TG_API_BASE = 'https://api.telegram.org';
 async function callApi(botToken, method, body) {
   const url = `${TG_API_BASE}/bot${botToken}/${method}`;
   const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await response.json();
@@ -28,9 +28,9 @@ async function callApi(botToken, method, body) {
  * @param {string} webhookUrl
  */
 export async function setWebhook(botToken, webhookUrl) {
-  return callApi(botToken, 'setWebhook', {
+  return callApi(botToken, "setWebhook", {
     url: webhookUrl,
-    allowed_updates: ['message', 'my_chat_member'],
+    allowed_updates: ["message", "my_chat_member", "callback_query"],
   });
 }
 
@@ -39,7 +39,7 @@ export async function setWebhook(botToken, webhookUrl) {
  * @param {string} botToken
  */
 export async function deleteWebhook(botToken) {
-  return callApi(botToken, 'deleteWebhook', {});
+  return callApi(botToken, "deleteWebhook", {});
 }
 
 /**
@@ -48,7 +48,7 @@ export async function deleteWebhook(botToken) {
  * @param {number|bigint} chatId
  */
 export async function leaveChat(botToken, chatId) {
-  return callApi(botToken, 'leaveChat', { chat_id: chatId });
+  return callApi(botToken, "leaveChat", { chat_id: chatId });
 }
 
 /**
@@ -57,7 +57,7 @@ export async function leaveChat(botToken, chatId) {
  * @param {number|bigint} chatId
  */
 export async function getChat(botToken, chatId) {
-  return callApi(botToken, 'getChat', { chat_id: chatId });
+  return callApi(botToken, "getChat", { chat_id: chatId });
 }
 
 /**
@@ -68,9 +68,32 @@ export async function getChat(botToken, chatId) {
  * @param {Record<string, any>} [options]
  */
 export async function sendMessage(botToken, chatId, text, options = {}) {
-  return callApi(botToken, 'sendMessage', {
+  return callApi(botToken, "sendMessage", {
     chat_id: chatId,
     text,
     ...options,
   });
+}
+
+/**
+ * 回應 callback_query（消除 loading 狀態）
+ * @param {string} botToken
+ * @param {string} callbackQueryId
+ * @param {string} [text]
+ */
+export async function answerCallbackQuery(botToken, callbackQueryId, text) {
+  return callApi(botToken, "answerCallbackQuery", {
+    callback_query_id: callbackQueryId,
+    text,
+    show_alert: false,
+  });
+}
+
+/**
+ * 更新訊息的 inline keyboard
+ * @param {string} botToken
+ * @param {{ chat_id: number, message_id: number, reply_markup: object }} params
+ */
+export async function editMessageReplyMarkup(botToken, params) {
+  return callApi(botToken, "editMessageReplyMarkup", params);
 }
