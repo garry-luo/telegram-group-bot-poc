@@ -155,17 +155,35 @@ router.post("/group-chat/manual-add", async (req, res) => {
     });
   }
 
-  // 透過 Telegram API 驗證 Bot 確實在群組中
-  const chatInfo = await telegramApiService
-    .getChat(bot.bot_token, numericChatId)
+  // 取得 Bot 自身 ID，再用 getChatMember 確認 Bot 確實在群組中
+  const botInfo = await telegramApiService.getMe(bot.bot_token).catch((err) => {
+    throw Object.assign(new Error(`無法取得 Bot 資訊：${err.message}`), {
+      statusCode: 500,
+    });
+  });
+
+  const member = await telegramApiService
+    .getChatMember(bot.bot_token, numericChatId, botInfo.id)
     .catch((err) => {
       throw Object.assign(
         new Error(`Bot 不在此群組或群組不存在：${err.message}`),
-        {
-          statusCode: 400,
-        },
+        { statusCode: 400 },
       );
     });
+
+  const activeStatuses = ["member", "administrator", "creator"];
+  if (!activeStatuses.includes(member.status)) {
+    return res
+      .status(400)
+      .json({
+        success: false,
+        error: `Bot 不在此群組中（狀態：${member.status}）`,
+      });
+  }
+
+  const chatInfo = await telegramApiService
+    .getChat(bot.bot_token, numericChatId)
+    .catch(() => ({ title: null, type: null, username: null }));
 
   const group = await groupChatService.addPending({
     botId: bot.id,

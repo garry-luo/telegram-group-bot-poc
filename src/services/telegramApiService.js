@@ -97,3 +97,24 @@ export async function answerCallbackQuery(botToken, callbackQueryId, text) {
 export async function editMessageReplyMarkup(botToken, params) {
   return callApi(botToken, "editMessageReplyMarkup", params);
 }
+
+/**
+ * 取得指定成員在群組中的狀態
+ * @param {string} botToken
+ * @param {number|bigint} chatId
+ * @param {number} userId
+ */
+export async function getChatMember(botToken, chatId, userId) {
+  return callApi(botToken, "getChatMember", {
+    chat_id: chatId,
+    user_id: userId,
+  });
+}
+
+/**
+ * 取得 Bot 自身資訊（包含 id）
+ * @param {string} botToken
+ */
+export async function getMe(botToken) {
+  return callApi(botToken, "getMe", {});
+}
