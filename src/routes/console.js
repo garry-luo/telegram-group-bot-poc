@@ -136,18 +136,40 @@ router.post("/group-chat/manual-add", async (req, res) => {
     return res.status(404).json({ success: false, error: "尚未建立 Bot 設定" });
   }
 
+  const numericChatId = Number(chatId);
+
+  // 檢查 DB 是否已有此群組記錄
+  const existing = await groupChatRepository.findByBotIdAndChatId(
+    bot.id,
+    numericChatId,
+  );
+  if (existing) {
+    const statusMsg = {
+      0: "審核中（PENDING）",
+      1: "已啟用（ACTIVE）",
+      2: "已拒絕（REJECTED），請先刪除記錄再重新新增",
+    };
+    return res.status(409).json({
+      success: false,
+      error: `此群組已存在：${statusMsg[existing.status] ?? existing.status}`,
+    });
+  }
+
   // 透過 Telegram API 驗證 Bot 確實在群組中
   const chatInfo = await telegramApiService
-    .getChat(bot.bot_token, Number(chatId))
+    .getChat(bot.bot_token, numericChatId)
     .catch((err) => {
-      throw Object.assign(new Error(`無法取得群組資訊：${err.message}`), {
-        statusCode: 400,
-      });
+      throw Object.assign(
+        new Error(`Bot 不在此群組或群組不存在：${err.message}`),
+        {
+          statusCode: 400,
+        },
+      );
     });
 
   const group = await groupChatService.addPending({
     botId: bot.id,
-    chatId: Number(chatId),
+    chatId: numericChatId,
     chatTitle: chatInfo.title,
     chatType: chatInfo.type,
     chatUsername: chatInfo.username,
