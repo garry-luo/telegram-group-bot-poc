@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tgbot-poc-postgres
+    environment:
+      POSTGRES_USER: poc_user
+      POSTGRES_PASSWORD: poc_pass
+      POSTGRES_DB: telegram_bot_poc
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+volumes:
+  postgres_data:

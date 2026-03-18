@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Telegram Bot 群組管理 POC</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+      color: #333;
+    }
+    header {
+      background: #2196f3;
+      color: #fff;
+      padding: 16px 24px;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .container { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.12);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    h2 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: #1565c0; }
+    label { display: block; font-size: .85rem; color: #555; margin-bottom: 4px; margin-top: 10px; }
+    input, select {
+      width: 100%; padding: 8px 10px; border: 1px solid #ccc;
+      border-radius: 4px; font-size: .9rem;
+    }
+    input:focus, select:focus { outline: none; border-color: #2196f3; }
+    .row { display: flex; gap: 10px; align-items: flex-end; }
+    .row > * { flex: 1; }
+    button {
+      padding: 8px 18px; background: #2196f3; color: #fff;
+      border: none; border-radius: 4px; cursor: pointer; font-size: .9rem;
+      white-space: nowrap;
+    }
+    button:hover { background: #1976d2; }
+    button.danger { background: #e53935; }
+    button.danger:hover { background: #c62828; }
+    button.success { background: #43a047; }
+    button.success:hover { background: #2e7d32; }
+    button.sm { padding: 5px 12px; font-size: .8rem; }
+    .msg {
+      margin-top: 10px; padding: 8px 12px; border-radius: 4px;
+      font-size: .85rem; display: none;
+    }
+    .msg.ok { background: #e8f5e9; color: #2e7d32; display: block; }
+    .msg.err { background: #ffebee; color: #c62828; display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th { background: #e3f2fd; text-align: left; padding: 8px 10px; }
+    td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    tr:hover td { background: #fafafa; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: .75rem; font-weight: 600;
+    }
+    .badge-0 { background: #fff3e0; color: #e65100; }
+    .badge-1 { background: #e8f5e9; color: #2e7d32; }
+    .badge-2 { background: #ffebee; color: #c62828; }
+    .pager { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  </style>
+</head>
+<body>
+<header>Telegram Bot 群組管理 POC</header>
+<div class="container">
+
+  <!-- Bot 設定 -->
+  <div class="card">
+    <h2>Bot 設定</h2>
+    <label>Bot Token</label>
+    <input type="text" id="botToken" placeholder="123456:ABC..." />
+    <label>Admin Telegram User ID（可選）</label>
+    <input type="number" id="adminTgUserId" placeholder="123456789" />
+    <label>Ngrok Base URL（用於設定 Webhook）</label>
+    <input type="text" id="ngrokBaseUrl" placeholder="https://xxxx.ngrok-free.app" />
+    <div class="row" style="margin-top:12px">
+      <button onclick="saveBotSetting()">儲存並設定 Webhook</button>
+      <button onclick="loadBotSetting()" style="background:#757575">重新載入</button>
+    </div>
+    <div id="botMsg" class="msg"></div>
+  </div>
+
+  <!-- 群組列表 -->
+  <div class="card">
+    <h2>群組列表</h2>
+    <div class="row" style="margin-bottom:14px">
+      <div>
+        <label>狀態篩選</label>
+        <select id="filterStatus" onchange="loadGroups(1)">
+          <option value="">全部</option>
+          <option value="0">PENDING</option>
+          <option value="1">ACTIVE</option>
+          <option value="2">REJECTED</option>
+        </select>
+      </div>
+      <div style="max-width:120px; align-self:flex-end">
+        <button onclick="loadGroups(1)">重新整理</button>
+      </div>
+    </div>
+    <table id="groupTable">
+      <thead>
+        <tr>
+          <th>Chat ID</th>
+          <th>名稱</th>
+          <th>類型</th>
+          <th>狀態</th>
+          <th>申請者</th>
+          <th>建立時間</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="groupTbody">
+        <tr><td colspan="7" style="text-align:center;color:#999">請先載入群組資料</td></tr>
+      </tbody>
+    </table>
+    <div class="pager" id="pager"></div>
+    <div id="groupMsg" class="msg"></div>
+  </div>
+
+  <!-- 手動新增群組 -->
+  <div class="card">
+    <h2>手動新增群組</h2>
+    <div class="row">
+      <div>
+        <label>Chat ID</label>
+        <input type="number" id="manualChatId" placeholder="-100123456789" />
+      </div>
+      <div style="max-width:120px">
+        <button onclick="manualAdd()">新增至 PENDING</button>
+      </div>
+    </div>
+    <div id="manualMsg" class="msg"></div>
+  </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
